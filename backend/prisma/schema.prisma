@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  VIEWER
+  EDITOR
+  OWNER
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String?  
+  name        String?
+  avatarUrl   String?  @map("avatar_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  ownedDocuments Document[]           @relation("DocumentOwner")
+  permissions    DocumentPermission[]
+
+  @@map("users")
+}
+
+model Document {
+  id           String   @id @default(uuid())
+  title        String   @default("Untitled Document")
+  ownerId      String   @map("owner_id")
+  isPublic     Boolean  @default(false) @map("is_public")
+  publicRole   Role     @default(VIEWER) @map("public_role")
+
+  // Lưu Binary State của Yjs CRDT Doc (dạng Bytea) khi tất cả user rời phòng
+  currentState Bytes?   @map("current_state") 
+
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  owner       User                 @relation("DocumentOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  permissions DocumentPermission[]
+  snapshots   DocumentSnapshot[]
+
+  @@map("documents")
+}
+
+model DocumentPermission {
+  id         String   @id @default(uuid())
+  documentId String   @map("document_id")
+  userId     String   @map("user_id")
+  role       Role     @default(VIEWER)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, userId]) // Một user chỉ có 1 quyền duy nhất trên 1 doc
+  @@map("document_permissions")
+}
+
+model DocumentSnapshot {
+  id         String   @id @default(uuid())
+  documentId String   @map("document_id")
+  snapshot   Bytes    // Nén binary state tại thời điểm lưu
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("document_snapshots")
+}
