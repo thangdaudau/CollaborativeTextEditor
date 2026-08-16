@@ -47,6 +47,7 @@ export class CollabProvider {
   }
 
   private initListeners() {
+    // doc 'update' event listener từ bản thân nếu doc thay đổi (gõ phím, e-đít)
     this.doc.on('update', (update: Uint8Array, origin: unknown) => {
       if (origin !== this && this.ws?.readyState === WebSocket.OPEN) {
         const encoder = encoding.createEncoder();
@@ -102,6 +103,8 @@ export class CollabProvider {
       this.ws = new WebSocket(this.url);
       this.ws.binaryType = 'arraybuffer';
 
+      // Gửi ydoc của client lên server
+      // nếu có khác biệt thì phần khác đó sẽ được server gửi lại client và dữ liệu (message) sẽ chạy vào hàm onmessage bên dưới
       this.ws.onopen = () => {
         if (!this.shouldConnect) {
           this.ws?.close();
@@ -127,6 +130,7 @@ export class CollabProvider {
         }
       };
 
+      // 'message' event listener gửi từ client khác
       this.ws.onmessage = (event: MessageEvent<ArrayBuffer>) => {
         const data = new Uint8Array(event.data);
         const decoder = decoding.createDecoder(data);
