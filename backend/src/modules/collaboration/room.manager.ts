@@ -5,6 +5,7 @@ import { prisma } from '../../config/database.js';
 import { CollabService } from './collab.service.js';
 import type { CollabClient } from './collab.types.js';
 import { CollabMessageType, SyncSubType } from '../../shared/types/collab.js';
+import { registerGetDocStateHandler, registerRoomResetHandler } from '../../shared/services/collab-room.service.js';
 
 export interface CollabRoom {
   docId: string;
@@ -77,6 +78,35 @@ export class RoomManager {
     return room;
   }
 
+  // Hàm đá toàn bộ client ra ngoài và reset phòng trong RAM
+  static async resetRoom( docId: string, reason: string = 'ROOM_RESET', closeCode: number = 4003) {
+    const room = this.rooms.get(docId);
+    if (!room) return;
+
+    if (room.saveTimeout) {
+      clearTimeout(room.saveTimeout);
+      room.saveTimeout = null;
+    }
+
+    // Nếu không phải khôi phục snapshot thì lưu trạng thái hiện tại trước khi đóng
+    if (room.isDirty && reason !== 'DOC_RESTORED') {
+      await this.persistStateToDB(room);
+    }
+    room.isDirty = false;
+
+    // Đóng toàn bộ socket client
+    room.clients.forEach((client) => {
+      if (client.readyState === 1) {
+        client.close(closeCode, reason);
+      }
+    });
+
+    // Giải phóng bộ nhớ
+    room.awareness.destroy();
+    room.doc.destroy();
+    this.rooms.delete(docId);
+  }
+
   static addClient(room: CollabRoom, client: CollabClient) {
     room.clients.add(client);
   }
@@ -98,23 +128,6 @@ export class RoomManager {
       room.doc.destroy();
       this.rooms.delete(room.docId);
     }
-  }
-
-  static applySnapshotRestore(docId: string, snapshotBytes: Uint8Array) {
-    const room = this.rooms.get(docId);
-    if (!room) return;
-
-    const tempDoc = new Y.Doc();
-    Y.applyUpdate(tempDoc, snapshotBytes);
-    const restoredText = tempDoc.getText('content').toString();
-
-    const activeText = room.doc.getText('content');
-    room.doc.transact(() => {
-      activeText.delete(0, activeText.length);
-      activeText.insert(0, restoredText);
-    });
-
-    room.isDirty = false;
   }
 
   private static scheduleDebounceSave(room: CollabRoom) {
@@ -144,3 +157,10 @@ export class RoomManager {
     }
   }
 }
+
+// Đăng ký implementation với Shared Service
+registerRoomResetHandler(RoomManager.resetRoom.bind(RoomManager));
+registerGetDocStateHandler((docId: string) => {
+  const room = RoomManager.getActiveRoom(docId);
+  return room ? Y.encodeStateAsUpdate(room.doc) : null;
+});

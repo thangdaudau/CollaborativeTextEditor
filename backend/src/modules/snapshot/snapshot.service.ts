@@ -1,15 +1,15 @@
 import * as Y from 'yjs';
 import { prisma } from '../../config/database.js';
-import { RoomManager } from '../collaboration/room.manager.js';
+import {
+  getCollabDocState,
+  resetCollabRoom,
+} from '../../shared/services/collab-room.service.js';
 
 export class SnapshotService {
   static async createSnapshot(documentId: string) {
-    let binaryState: Uint8Array;
-    const activeRoom = RoomManager.getActiveRoom(documentId);
+    let binaryState = getCollabDocState(documentId);
 
-    if (activeRoom) {
-      binaryState = Y.encodeStateAsUpdate(activeRoom.doc);
-    } else {
+    if (!binaryState) {
       const doc = await prisma.document.findUnique({
         where: { id: documentId },
         select: { currentState: true },
@@ -66,7 +66,6 @@ export class SnapshotService {
     const previewDoc = new Y.Doc();
     Y.applyUpdate(previewDoc, new Uint8Array(snapshot.snapshot));
 
-    // Trích xuất preview: Thử TipTap XmlFragment trước, nếu rỗng thì fallback sang Y.Text
     let previewText = '';
     const xmlFragment = previewDoc.getXmlFragment('default');
     if (xmlFragment.length > 0) {
@@ -107,7 +106,8 @@ export class SnapshotService {
       },
     });
 
-    RoomManager.applySnapshotRestore(documentId, snapshotBytes);
+    // Reset phòng qua wrapper
+    await resetCollabRoom(documentId, 'DOC_RESTORED', 4001);
 
     return {
       message: 'Document restored successfully',

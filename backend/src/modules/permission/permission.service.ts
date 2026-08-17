@@ -1,5 +1,6 @@
 import { prisma } from '../../config/database.js';
 import type { Role } from '../../generated/prisma/enums.js';
+import { resetCollabRoom } from '../../shared/services/collab-room.service.js';
 
 export class PermissionService {
   static async getDocumentPermissions(documentId: string) {
@@ -100,6 +101,9 @@ export class PermissionService {
       },
     });
 
+    // Reset phòng để client reconnect nhận role mới
+    await resetCollabRoom(documentId, 'PERMISSION_GRANTED', 4003);
+
     return permission;
   }
 
@@ -138,6 +142,9 @@ export class PermissionService {
         },
       },
     });
+
+    // Reset phòng để đá user vừa bị thu hồi quyền
+    await resetCollabRoom(documentId, 'PERMISSION_REVOKED', 4003);
 
     return { message: 'Permission revoked successfully' };
   }

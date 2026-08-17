@@ -37,19 +37,41 @@ export class CollabService {
 
     switch (messageType) {
       case CollabMessageType.SYNC: {
-        const encoder = encoding.createEncoder();
-        encoding.writeVarUint(encoder, CollabMessageType.SYNC);
+        const syncMessageType = decoding.readVarUint(decoder);
 
-        const isReadOnly = client.role === 'VIEWER';
-        syncProtocol.readSyncMessage(
-          decoder,
-          encoder,
-          room.doc,
-          isReadOnly ? 'read-only-origin' : client
-        );
+        switch (syncMessageType) {
+          case syncProtocol.messageYjsSyncStep1: {
+            // VIEWER hay ai cũng được phép nhận dữ liệu tài liệu
+            const encoder = encoding.createEncoder();
+            encoding.writeVarUint(encoder, CollabMessageType.SYNC);
+            
+            // readSyncStep1 ĐÃ TỰ ĐỘNG ghi messageYjsSyncStep2 vào encoder, không ghi đè thêm
+            syncProtocol.readSyncStep1(decoder, encoder, room.doc);
+            
+            if (encoding.length(encoder) > 1) {
+              CollabService.send(client, encoding.toUint8Array(encoder));
+            }
+            break;
+          }
 
-        if (encoding.length(encoder) > 1) {
-          CollabService.send(client, encoding.toUint8Array(encoder));
+          case syncProtocol.messageYjsSyncStep2: {
+            // Chặn VIEWER không cho đẩy dữ liệu khởi tạo của nó lên ghi đè server
+            if (client.role === 'VIEWER') return;
+
+            syncProtocol.readSyncStep2(decoder, room.doc, client);
+            break;
+          }
+
+          case syncProtocol.messageYjsUpdate: {
+            // Chặn VIEWER không cho gửi update gõ phím
+            if (client.role === 'VIEWER') return;
+
+            syncProtocol.readUpdate(decoder, room.doc, client);
+            break;
+          }
+
+          default:
+            console.warn(`[Collab] Unknown sync subtype: ${syncMessageType}`);
         }
         break;
       }
