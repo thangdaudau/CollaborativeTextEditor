@@ -195,13 +195,14 @@ Supabase Studio UI: <http://localhost:54323>
 
 Redis: `localhost:6379` (chưa dùng thằng này trong dự án, dự định dùng lưu Collab Room thay thế cho RAM của nodejs)
 
-### Khởi động Backend Server
+### Khởi động backend & frontend
 
 ```Bash
-npm install
-npx prisma db push    # Đồng bộ schema vào Postgres
-cd backend & npx prisma generate & cd ..
-npm run dev           # Khởi chạy Express + WS Server trên cổng 5000
+cd backend
+npx prisma migrate dev --name init_postgre
+npx prisma generate
+cd ..
+npm run dev
 ```
 
 ## Bọn Websocket, Yjs hoạt động theo kiểu Event Listner / Emmiter
