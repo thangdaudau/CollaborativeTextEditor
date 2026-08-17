@@ -1,5 +1,7 @@
 # Collaborative Text Editor
 
+![alt text](images/image.png)
+
 Một ứng dụng web thời gian thực (Real-time) cho phép nhiều người dùng cùng lúc chỉnh sửa văn bản với cơ chế giải quyết xung đột không trọng tài (Conflict-free Replicated Data Type - CRDT) dựa trên Yjs, hỗ trợ phân quyền ma trận (RBAC) và quản lý lịch sử phiên bản (Version Snapshots).
 
 ---
