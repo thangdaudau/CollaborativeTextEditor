@@ -32,6 +32,8 @@ export class CollabProvider {
     this.initListeners();
   }
 
+  // Method đăng ký listener lắng nghe sự kiệt client kết nối và ngắt kết nối websocket server
+  // trả về hàm (arrow function) hủy đăng ký
   onStatusChange(listener: (connected: boolean) => void) {
     this.statusListeners.add(listener);
     return () => {
@@ -83,7 +85,8 @@ export class CollabProvider {
   disconnect() {
     this.shouldConnect = false;
     if (this.ws) {
-      // 1. Gửi gói tin xóa trạng thái Awareness của bản thân trước khi ngắt socket
+      // Gửi gói tin xóa trạng thái Awareness của bản thân trước khi ngắt socket
+      // cái hàm removeAwarenessStates sẽ kích hoạt sự kiện 'update' và chạy vào cái listener trên kia 'this.initLitener'
       if (this.ws.readyState === WebSocket.OPEN) {
         awarenessProtocol.removeAwarenessStates(this.awareness, [this.doc.clientID], 'cleanup');
       }
@@ -154,8 +157,31 @@ export class CollabProvider {
         }
       };
 
-      this.ws.onclose = () => {
+      this.ws.onclose = (event: CloseEvent) => {
         this.setStatus(false);
+
+        // Nếu doc bị khôi phục snapshot hoặc thay đổi quyền -> Reload toàn bộ trang
+        if (event.code === 4001 || event.code === 4003) {
+          console.warn(`[Collab] Connection closed with code ${event.code} (${event.reason}). Reloading page...`);
+          this.shouldConnect = false; // Chặn reconnect ngầm
+          window.location.reload();
+          return;
+        }
+
+        // Nếu doc bị xóa -> Đá về trang chủ
+        if (event.code === 4004) {
+          this.shouldConnect = false;
+          window.location.href = '/';
+          return;
+        }
+
+        // Nếu bị chặn quyền ngay từ đầu (HTTP 403 / Handshake reject) -> Không reconnect vô tận
+        if (event.code === 1008 || event.code === 4403) {
+          this.shouldConnect = false;
+          return;
+        }
+
+        // Rớt mạng bình thường -> Tự reconnect sau 2s
         if (this.shouldConnect) {
           setTimeout(() => {
             if (this.shouldConnect) {

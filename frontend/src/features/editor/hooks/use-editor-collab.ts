@@ -62,6 +62,7 @@ export const useEditorCollab = (docId: string) => {
 
     provider.awareness.on('change', handleAwarenessChange);
 
+    // Trả về hàm dọn dẹp
     return () => {
       provider.awareness.off('change', handleAwarenessChange);
       unsubscribeStatus();
