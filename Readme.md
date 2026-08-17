@@ -203,3 +203,9 @@ npx prisma db push    # Đồng bộ schema vào Postgres
 cd backend & npx prisma generate & cd ..
 npm run dev           # Khởi chạy Express + WS Server trên cổng 5000
 ```
+
+## Bọn Websocket, Yjs hoạt động theo kiểu Event Listner / Emmiter
+
+* (Method) Websocket.send(message) sẽ tạo ra event 'message' của Websocket
+* Thao tác edit sẽ tạo ra event 'update' của 'yjs' (class) Doc
+* Tương tự với awareness (hiện diện con chuột trên màn hình edit).

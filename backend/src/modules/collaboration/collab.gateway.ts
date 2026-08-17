@@ -76,6 +76,8 @@ export class CollabGateway {
 
       CollabService.sendInitialSync(client, room);
 
+      // Thêm listener cho event 'message'
+      // event này kích hoạt khi có client (WebSocket.send) gửi dữ liệu về websocket server
       client.on('message', (message: Buffer, isBinary: boolean) => {
         if (!isBinary) return;
         CollabService.handleMessage(client, room, message);

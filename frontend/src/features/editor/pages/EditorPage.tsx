@@ -37,7 +37,8 @@ export const EditorPage = () => {
   const { ydoc, provider, connected, collaborators, userColor } = useEditorCollab(docId);
   const isOwner = Boolean(user && doc && doc.ownerId === user.id);
   const canEdit = isOwner || (doc?.isPublic && doc?.publicRole === 'EDITOR');
-  const isReadOnly = !canEdit;  const currentUserName = user?.name || user?.email?.split('@')[0] || 'Guest User';
+  const isReadOnly = !canEdit;
+  const currentUserName = user?.name || user?.email?.split('@')[0] || 'Guest User';
 
   // Quản lý UndoManager chuẩn vòng đời
   const undoManager = useMemo(() => {
