@@ -10,7 +10,7 @@ import { EditorPage } from '@/features/editor/pages/EditorPage';
 const ProtectedRoute = ({ children }: { children: React.JSX.Element }) => {
   const token = useAuthStore((s) => s.token);
   const { isLoading } = useMe();
-
+  
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-950 text-zinc-400">
@@ -22,13 +22,15 @@ const ProtectedRoute = ({ children }: { children: React.JSX.Element }) => {
   if (!token) {
     return <Navigate to="/login" replace />;
   }
-
+  
   return children;
 };
 
 // Component chặn user đã đăng nhập quay lại Login/Register
 const PublicOnlyRoute = ({ children }: { children: React.JSX.Element }) => {
   const token = useAuthStore((s) => s.token);
+  console.log(token);
+  console.log("hello world");
   if (token) {
     return <Navigate to="/" replace />;
   }

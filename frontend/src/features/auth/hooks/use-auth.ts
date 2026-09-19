@@ -20,7 +20,7 @@ export const getApiErrorMessage = (err: unknown): string => {
   if (isAxiosError<{ error?: string }>(err)) {
     return err.response?.data?.error || 'Yêu cầu thất bại';
   }
-  return 'Lỗi không xác định';
+  return 'Lỗi không xác định: ' + String(err);
 };
 
 // 1. Hook lấy thông tin Profile

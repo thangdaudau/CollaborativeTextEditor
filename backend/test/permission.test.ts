@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import { server } from '../src/index.js';
 import { getOrCreateUser, type TestUser } from './helpers.js';
@@ -23,6 +23,15 @@ describe('UC_DOC_02: Phân quyền & Chia sẻ Tài liệu (5 Test Cases)', () =
 
     expect(docRes.status).toBe(201);
     docId = docRes.body.id;
+  });
+
+  afterAll(async () => {
+    if (docId) {
+      await request(server)
+        .delete(`/api/documents/${docId}`)
+        .set('Authorization', `Bearer ${owner.token}`);
+    }
+    await new Promise<void>((resolve) => server.close(() => resolve()));
   });
 
   // TC 1: Owner cấp quyền EDITOR cho email hợp lệ -> 200 OK

@@ -38,6 +38,11 @@ describe('Kiểm thử Chức năng 2: Soạn thảo Đồng thời & Đồng b�
   });
 
   afterAll(async () => {
+    if (docId) {
+      await request(server)
+        .delete(`/api/documents/${docId}`)
+        .set('Authorization', `Bearer ${owner.token}`);
+    }
     await new Promise<void>((resolve) => server.close(() => resolve()));
   });
 
