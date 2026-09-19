@@ -195,7 +195,7 @@ PostgreSQL: `localhost:5432` (User: `postgres`, Password: `postgrespassword`, DB
 
 Supabase Studio UI: <http://localhost:54323>
 
-Redis: `localhost:6379` (chưa dùng thằng này trong dự án, dự định dùng để kéo dãn thời gian debound)
+Redis: `localhost:6379` (chưa dùng thằng này trong dự án, dự định dùng để kéo dãn debound ghi xuống db)
 
 ### Khởi động backend & frontend
 
