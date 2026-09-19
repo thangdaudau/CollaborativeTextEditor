@@ -84,6 +84,7 @@ export class CollabProvider {
 
   disconnect() {
     this.shouldConnect = false;
+    window.removeEventListener('beforeunload', this.handleUnload); // Gỡ listener window ngay khi ngắt kết nối
     if (this.ws) {
       // Gửi gói tin xóa trạng thái Awareness của bản thân trước khi ngắt socket
       // cái hàm removeAwarenessStates sẽ kích hoạt sự kiện 'update' và chạy vào cái listener trên kia 'this.initLitener'
@@ -92,6 +93,10 @@ export class CollabProvider {
       }
       const socket = this.ws;
       this.ws = null;
+      socket.onopen = null;
+      socket.onmessage = null;
+      socket.onclose = null;
+      socket.onerror = null;
       if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
         socket.close();
       }
