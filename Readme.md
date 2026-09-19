@@ -195,16 +195,13 @@ PostgreSQL: `localhost:5432` (User: `postgres`, Password: `postgrespassword`, DB
 
 Supabase Studio UI: <http://localhost:54323>
 
-Redis: `localhost:6379` (chưa dùng thằng này trong dự án, dự định dùng lưu Collab Room thay thế cho RAM của nodejs)
+Redis: `localhost:6379` (chưa dùng thằng này trong dự án, dự định dùng để kéo dãn thời gian debound)
 
 ### Khởi động backend & frontend
 
 ```Bash
-cd backend
-npx prisma migrate dev --name init_postgre
-npx prisma generate
-cd ..
-npm run dev
+cd backend && npx prisma migrate deploy && npx prisma generate
+cd .. && npm run dev
 ```
 
 ## Bọn Websocket, Yjs hoạt động theo kiểu Event Listner / Emmiter

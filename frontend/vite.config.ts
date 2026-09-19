@@ -23,7 +23,7 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true
       },
-      // Proxy cả WebSocket collab để frontend kết nối trực tiếp ws://localhost:3000/collab
+      // Proxy cả WebSocket collab để frontend kết nối trực tiếp ws://localhost:5000/collab
       '/collab': {
         target: 'ws://localhost:5000',
         ws: true,
