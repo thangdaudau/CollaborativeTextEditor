@@ -133,7 +133,7 @@ export class CollabProvider {
         }
       };
 
-      // 'message' event listener gửi từ client khác
+      // 'message' event listener nhận từ client khác
       this.ws.onmessage = (event: MessageEvent<ArrayBuffer>) => {
         const data = new Uint8Array(event.data);
         const decoder = decoding.createDecoder(data);

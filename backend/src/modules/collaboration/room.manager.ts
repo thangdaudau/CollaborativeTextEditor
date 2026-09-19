@@ -83,6 +83,9 @@ export class RoomManager {
     const room = this.rooms.get(docId);
     if (!room) return;
 
+    // Xóa khỏi Map NGAY LẬP TỨC để chặn không cho request mới chui vào room đang bị reset
+    this.rooms.delete(docId);
+    
     if (room.saveTimeout) {
       clearTimeout(room.saveTimeout);
       room.saveTimeout = null;
@@ -122,6 +125,13 @@ export class RoomManager {
 
       if (room.isDirty) {
         await this.persistStateToDB(room);
+      }
+
+      // FIX RACE CONDITION:
+      // Nếu trong thời gian await lưu DB mà có client mới vừa kết nối vào phòng,
+      // thì TUYỆT ĐỐI KHÔNG DESTROY DOC, giữ nguyên để client mới dùng tiếp!
+      if (room.clients.size > 0) {
+        return;
       }
 
       room.awareness.destroy();

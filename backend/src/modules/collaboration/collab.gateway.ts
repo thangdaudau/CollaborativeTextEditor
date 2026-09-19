@@ -71,25 +71,55 @@ export class CollabGateway {
 
   private bindConnectionEvent() {
     this.wss.on('connection', async (client: CollabClient) => {
-      const room = await RoomManager.getOrCreateRoom(client.docId);
-      RoomManager.addClient(room, client);
-
-      CollabService.sendInitialSync(client, room);
+      // Hàng đợi đệm các gói tin bay đến quá sớm trong lúc chờ Room khởi tạo
+      const pendingMessages: Buffer[] = [];
+      let isRoomReady = false;
+      let targetRoom: any = null;
 
       // Thêm listener cho event 'message'
       // event này kích hoạt khi có client (WebSocket.send) gửi dữ liệu về websocket server
       client.on('message', (message: Buffer, isBinary: boolean) => {
         if (!isBinary) return;
-        CollabService.handleMessage(client, room, message);
+
+        if (!isRoomReady) {
+          // Phòng chưa load xong DB -> Nhét vào queue chờ
+          pendingMessages.push(message);
+        } else {
+          // Phòng đã sẵn sàng -> Xử lý trực tiếp
+          CollabService.handleMessage(client, targetRoom, message);
+        }
       });
 
       client.on('pong', () => {
         client.isAlive = true;
       });
 
-      client.on('close', async () => {
-        await RoomManager.removeClient(room, client);
-      });
+      // Tiến hành load room bất đồng bộ từ DB / RAM
+      RoomManager.getOrCreateRoom(client.docId)
+        .then((room) => {
+          targetRoom = room;
+          RoomManager.addClient(room, client);
+          CollabService.sendInitialSync(client, room);
+
+          // Đánh dấu phòng đã xong
+          isRoomReady = true;
+
+          // Xả toàn bộ các gói tin client đã gửi sớm trong hàng đợi
+          while (pendingMessages.length > 0) {
+            const earlyMessage = pendingMessages.shift();
+            if (earlyMessage) {
+              CollabService.handleMessage(client, room, earlyMessage);
+            }
+          }
+
+          client.on('close', async () => {
+            await RoomManager.removeClient(room, client);
+          });
+        })
+        .catch((err) => {
+          console.error('[CollabGateway] Failed to setup room:', err);
+          client.close(1011, 'Internal Server Error');
+        });
     });
   }
 

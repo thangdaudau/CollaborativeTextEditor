@@ -41,16 +41,19 @@ export class CollabService {
 
         switch (syncMessageType) {
           case syncProtocol.messageYjsSyncStep1: {
-            // VIEWER hay ai cũng được phép nhận dữ liệu tài liệu
-            const encoder = encoding.createEncoder();
-            encoding.writeVarUint(encoder, CollabMessageType.SYNC);
-            
-            // readSyncStep1 ĐÃ TỰ ĐỘNG ghi messageYjsSyncStep2 vào encoder, không ghi đè thêm
-            syncProtocol.readSyncStep1(decoder, encoder, room.doc);
-            
-            if (encoding.length(encoder) > 1) {
-              CollabService.send(client, encoding.toUint8Array(encoder));
+            // FRAME 1: Trả lời SyncStep 2 (dữ liệu Server có mà Client thiếu)
+            const encoderStep2 = encoding.createEncoder();
+            encoding.writeVarUint(encoderStep2, CollabMessageType.SYNC);
+            syncProtocol.readSyncStep1(decoder, encoderStep2, room.doc);
+            if (encoding.length(encoderStep2) > 1) {
+              CollabService.send(client, encoding.toUint8Array(encoderStep2));
             }
+
+            // FRAME 2: Bắn riêng SyncStep 1 của Server (State Vector của Server để Client gửi bù delta)
+            const encoderStep1 = encoding.createEncoder();
+            encoding.writeVarUint(encoderStep1, CollabMessageType.SYNC);
+            syncProtocol.writeSyncStep1(encoderStep1, room.doc);
+            CollabService.send(client, encoding.toUint8Array(encoderStep1));
             break;
           }
 
