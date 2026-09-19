@@ -17,17 +17,11 @@ export class CollabProvider {
   connected = false;
   private shouldConnect = false;
   private statusListeners = new Set<(connected: boolean) => void>();
-  private handleUnload: () => void;
 
   constructor(url: string, doc: Y.Doc) {
     this.url = url;
     this.doc = doc;
     this.awareness = new awarenessProtocol.Awareness(doc);
-
-    this.handleUnload = () => {
-      this.destroy();
-    };
-    window.addEventListener('beforeunload', this.handleUnload);
 
     this.initListeners();
   }
@@ -84,7 +78,6 @@ export class CollabProvider {
 
   disconnect() {
     this.shouldConnect = false;
-    window.removeEventListener('beforeunload', this.handleUnload); // Gỡ listener window ngay khi ngắt kết nối
     if (this.ws) {
       // Gửi gói tin xóa trạng thái Awareness của bản thân trước khi ngắt socket
       // cái hàm removeAwarenessStates sẽ kích hoạt sự kiện 'update' và chạy vào cái listener trên kia 'this.initLitener'
@@ -205,7 +198,6 @@ export class CollabProvider {
   }
 
   destroy() {
-    window.removeEventListener('beforeunload', this.handleUnload);
     this.disconnect();
     this.statusListeners.clear();
     this.awareness.destroy();
